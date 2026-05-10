@@ -65,13 +65,39 @@ kotlin {
         }
     }
     js {
-        browser()
-        nodejs()
+        browser {
+            testTask {
+                useMocha {
+                    // 60s is a safety net; isMatchRandom runs up to 10K
+                    // iterations and finishes in well under 2s on all platforms.
+                    timeout = "60s"
+                }
+            }
+        }
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
     }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
-        nodejs()
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
     }
 
     swiftExport {

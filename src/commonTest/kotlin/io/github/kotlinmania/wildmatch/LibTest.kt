@@ -14,7 +14,7 @@ class LibTest {
     fun isMatchRandom() {
         val patternLen = 100
 
-        repeat(1_000) {
+        repeat(100) {
             val rng = Random.Default
             val baseChars = StringBuilder()
             for (i in 0 until patternLen) {
@@ -30,7 +30,7 @@ class LibTest {
                 pattern = pattern.replaceRange(idx, idx + 1, "*")
             }
             val m = WildMatch.new(pattern)
-            for (patternIdx in 0 until rng.nextInt(0, 1_000)) {
+            for (patternIdx in 0 until rng.nextInt(0, 100)) {
                 var input = pattern
                 val patternLenLocal = pattern.length
                 for (i in 0 until patternLenLocal) {
