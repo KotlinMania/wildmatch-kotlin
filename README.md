@@ -60,7 +60,7 @@ See the [documentation](https://docs.rs/wildmatch/latest/wildmatch/) for usage a
 
 ```kotlin
 dependencies {
-    implementation("io.github.kotlinmania:wildmatch-kotlin:0.1.0-SNAPSHOT")
+    implementation("io.github.kotlinmania:wildmatch-kotlin:0.1.0")
 }
 ```
 
