@@ -68,14 +68,17 @@ kotlin {
         browser {
             testTask {
                 useMocha {
-                    // isMatchRandom runs up to 1M assertions; default 2s mocha timeout
-                    // is exceeded under Linux Chrome in CI even though the algorithm
-                    // is fine. 60s leaves headroom without masking real hangs.
                     timeout = "60s"
                 }
             }
         }
-        nodejs()
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
     }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
@@ -86,7 +89,13 @@ kotlin {
                 }
             }
         }
-        nodejs()
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
     }
 
     swiftExport {
