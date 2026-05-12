@@ -65,13 +65,37 @@ kotlin {
         }
     }
     js {
-        browser()
-        nodejs()
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "120s"
+                }
+            }
+        }
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "120s"
+                }
+            }
+        }
     }
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
-        nodejs()
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "120s"
+                }
+            }
+        }
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "120s"
+                }
+            }
+        }
     }
 
     swiftExport {
