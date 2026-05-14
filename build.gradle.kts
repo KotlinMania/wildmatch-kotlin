@@ -15,7 +15,7 @@ plugins {
 }
 
 group = "io.github.kotlinmania"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0"
 
 val androidSdkDir: String? =
     providers.environmentVariable("ANDROID_SDK_ROOT").orNull
@@ -68,14 +68,16 @@ kotlin {
         browser {
             testTask {
                 useMocha {
-                    timeout = "120s"
+                    // 60s is a safety net; isMatchRandom runs up to 10K
+                    // iterations and finishes in well under 2s on all platforms.
+                    timeout = "60s"
                 }
             }
         }
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "120s"
+                    timeout = "60s"
                 }
             }
         }
@@ -85,14 +87,14 @@ kotlin {
         browser {
             testTask {
                 useMocha {
-                    timeout = "120s"
+                    timeout = "60s"
                 }
             }
         }
         nodejs {
             testTask {
                 useMocha {
-                    timeout = "120s"
+                    timeout = "60s"
                 }
             }
         }
