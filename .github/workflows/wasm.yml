@@ -49,4 +49,16 @@ jobs:
           ./gradlew
           wasmJsBrowserTest
           wasmJsNodeTest
+          wasmWasiNodeTest
           --no-configuration-cache
+
+      - name: Upload test reports (WASM)
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-wasm
+          path: |
+            build/reports/tests/
+            build/test-results/
+          retention-days: 7
+          if-no-files-found: warn
