@@ -44,7 +44,7 @@ package io.github.kotlinmania.wildmatch
  * and [singleWildcard] is the character used to represent a single-character wildcard
  * (e.g., `?`).
  *
- * Panics at construction time if both wildcard characters are identical.
+ * Throws [IllegalArgumentException] at construction time if both wildcard characters are identical.
  *
  * Examples:
  * ```
