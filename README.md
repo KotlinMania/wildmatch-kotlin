@@ -74,9 +74,9 @@ dependencies {
 ### Targets
 
 - macOS arm64
-- Linux x64
+- Linux x64 / arm64
 - Windows mingw-x64
-- iOS arm64 / simulator-arm64 (Swift export + XCFramework)
+- iOS arm64 / x64 / simulator-arm64 (Swift export + XCFramework)
 - JS (browser + Node.js)
 - Wasm-JS (browser + Node.js)
 - Android (API 24+)

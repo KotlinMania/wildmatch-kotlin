@@ -51,8 +51,15 @@ kotlin {
         }
     }
     linuxX64()
+    linuxArm64()
     mingwX64()
     iosArm64 {
+        binaries.framework {
+            baseName = "Wildmatch"
+            xcf.add(this)
+        }
+    }
+    iosX64 {
         binaries.framework {
             baseName = "Wildmatch"
             xcf.add(this)
