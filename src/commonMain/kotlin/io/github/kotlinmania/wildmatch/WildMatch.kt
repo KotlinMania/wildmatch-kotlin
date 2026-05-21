@@ -5,10 +5,9 @@ package io.github.kotlinmania.wildmatch
  * A wildcard matcher using `*` as the multi-character wildcard and `?` as the
  * single-character wildcard.
  *
- * This entry point is the Kotlin analog of the upstream Rust type alias
- * `WildMatch = WildMatchPattern<'*', '?'>`. Kotlin has no const-generic char parameters, so the
- * default wildcards are bound through factory methods on this object instead of through the
- * type.
+ * This entry point is the Kotlin analog of the upstream default wildcard matcher.
+ * Kotlin has no const-generic char parameters, so the default wildcards are bound
+ * through factory methods on this object instead of through the type.
  */
 object WildMatch {
     /** Constructor with pattern which can be used for matching. */

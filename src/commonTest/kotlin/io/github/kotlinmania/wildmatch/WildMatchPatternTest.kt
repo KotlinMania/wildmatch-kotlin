@@ -294,6 +294,30 @@ class WildMatchPatternTest {
         val matcher = WildMatch.new("")
         assertEquals("", matcher.toString())
     }
+
+    @Test
+    fun compareToOrdersPatternsLexicographically() {
+        val a = WildMatch.new("abc")
+        val b = WildMatch.new("abd")
+        val c = WildMatch.new("abc")
+        assertTrue(a < b)
+        assertTrue(b > a)
+        assertEquals(0, a.compareTo(c))
+    }
+
+    @Test
+    fun compareToOrdersByShorterPatternFirst() {
+        val shorter = WildMatch.new("ab")
+        val longer = WildMatch.new("abc")
+        assertTrue(shorter < longer)
+    }
+
+    @Test
+    fun compareToOrdersCaseSensitiveBeforeCaseInsensitive() {
+        val sensitive = WildMatch.new("abc")
+        val insensitive = WildMatch.newCaseInsensitive("abc")
+        assertTrue(sensitive < insensitive)
+    }
 }
 
 private fun randomAlphanumericChar(rng: Random): Char {

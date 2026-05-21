@@ -44,7 +44,7 @@ package io.github.kotlinmania.wildmatch
  * and [singleWildcard] is the character used to represent a single-character wildcard
  * (e.g., `?`).
  *
- * Panics at construction time if both wildcard characters are identical.
+ * Throws [IllegalArgumentException] at construction time if both wildcard characters are identical.
  *
  * Examples:
  * ```
@@ -72,12 +72,19 @@ class WildMatchPattern private constructor(
     val singleWildcard: Char,
     private val pattern: List<Char>,
     val isCaseInsensitive: Boolean,
-) {
+) : Comparable<WildMatchPattern> {
     init {
         require(multiWildcard != singleWildcard) {
             "single and multi wildcards cannot be the same"
         }
     }
+
+    @Deprecated(
+        message = "use matches instead",
+        replaceWith = ReplaceWith("matches(input)"),
+        level = DeprecationLevel.WARNING,
+    )
+    fun isMatch(input: String): Boolean = matches(input)
 
     /** Returns true if pattern applies to the given input string */
     fun matches(input: String): Boolean {
@@ -176,6 +183,27 @@ class WildMatchPattern private constructor(
         result = 31 * result + pattern.hashCode()
         result = 31 * result + isCaseInsensitive.hashCode()
         return result
+    }
+
+    /**
+     * Lexicographic comparison matching the upstream `PartialOrd` derive: compare the simplified
+     * pattern char-by-char, then the case-insensitive flag (false less than true). The wildcard
+     * characters are compared first so the total ordering agrees with [equals] for Kotlin's
+     * single-class representation of the upstream const-generic struct.
+     */
+    override fun compareTo(other: WildMatchPattern): Int {
+        val byMulti = multiWildcard.compareTo(other.multiWildcard)
+        if (byMulti != 0) return byMulti
+        val bySingle = singleWildcard.compareTo(other.singleWildcard)
+        if (bySingle != 0) return bySingle
+        val shorter = if (pattern.size < other.pattern.size) pattern.size else other.pattern.size
+        for (i in 0 until shorter) {
+            val byChar = pattern[i].compareTo(other.pattern[i])
+            if (byChar != 0) return byChar
+        }
+        val byLen = pattern.size.compareTo(other.pattern.size)
+        if (byLen != 0) return byLen
+        return isCaseInsensitive.compareTo(other.isCaseInsensitive)
     }
 
     companion object {
