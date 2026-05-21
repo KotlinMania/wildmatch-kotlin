@@ -41,5 +41,16 @@ jobs:
             compileKotlinIosSimulatorArm64 \
             compileKotlinIosX64 \
             iosSimulatorArm64Test \
-            assemble${XCF_NAME}XCFramework \
+            "assemble${XCF_NAME}XCFramework" \
             --no-configuration-cache
+
+      - name: Upload test reports (iOS)
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-ios
+          path: |
+            build/reports/tests/
+            build/test-results/
+          retention-days: 7
+          if-no-files-found: warn

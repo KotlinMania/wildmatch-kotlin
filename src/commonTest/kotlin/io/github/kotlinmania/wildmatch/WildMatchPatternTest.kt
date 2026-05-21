@@ -8,50 +8,50 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-class LibTest {
+class WildMatchPatternTest {
 
     @Test
     fun isMatchRandom() {
         val patternLen = 100
+        val rng = Random(0xC0FFEE)
 
-        repeat(100) {
-            val rng = Random.Default
-            val baseChars = StringBuilder()
-            for (i in 0 until patternLen) {
-                baseChars.append(randomAlphanumeric(rng))
+        repeat(1_000) {
+            val patternBuilder = StringBuilder(patternLen)
+            repeat(patternLen) {
+                patternBuilder.append(randomAlphanumericChar(rng))
             }
-            var pattern = baseChars.toString()
-            for (i in 0 until rng.nextInt(0, 15)) {
+            val pattern = StringBuilder(patternBuilder)
+            repeat(rng.nextInt(0, 15)) {
                 val idx = rng.nextInt(0, patternLen)
-                pattern = pattern.replaceRange(idx, idx + 1, "?")
+                pattern[idx] = '?'
             }
-            for (i in 0 until rng.nextInt(0, 15)) {
+            repeat(rng.nextInt(0, 15)) {
                 val idx = rng.nextInt(0, patternLen)
-                pattern = pattern.replaceRange(idx, idx + 1, "*")
+                pattern[idx] = '*'
             }
-            val m = WildMatch.new(pattern)
-            for (patternIdx in 0 until rng.nextInt(0, 100)) {
-                var input = pattern
-                val patternLenLocal = pattern.length
-                for (i in 0 until patternLenLocal) {
-                    val c = pattern[patternLenLocal - 1 - i]
-                    val idx = patternLenLocal - i - 1
+            val patternString = pattern.toString()
+            val matcher = WildMatch.new(patternString)
+            repeat(rng.nextInt(0, 1_000)) { patternIdx ->
+                val input = StringBuilder(patternString)
+                for ((i, c) in patternString.reversed().withIndex()) {
+                    val idx = patternString.length - i - 1
                     if (c == '?') {
-                        val randChar = randomAlphanumeric(rng).toString()
-                        input = input.replaceRange(idx, idx + 1, randChar)
+                        input[idx] = randomAlphanumericChar(rng)
                     }
                     if (c == '*') {
-                        val take = rng.nextInt(0, 15)
-                        val sb = StringBuilder()
-                        for (j in 0 until take) {
-                            sb.append(randomAlphanumeric(rng))
+                        val replacement = buildString {
+                            repeat(rng.nextInt(0, 15)) {
+                                append(randomAlphanumericChar(rng))
+                            }
                         }
-                        input = input.replaceRange(idx, idx + 1, sb.toString())
+                        input.deleteAt(idx)
+                        input.insert(idx, replacement)
                     }
                 }
+                val inputString = input.toString()
                 assertTrue(
-                    m.matches(input),
-                    "Pattern ($patternIdx): $pattern doesn't match input: $input",
+                    matcher.matches(inputString),
+                    "Pattern ($patternIdx): $patternString doesn't match input: $inputString",
                 )
             }
         }
@@ -59,7 +59,7 @@ class LibTest {
 
     @Test
     fun isMatch() {
-        for (pattern in listOf(
+        val patterns = listOf(
             "**",
             "*",
             "*?*",
@@ -70,9 +70,10 @@ class LibTest {
             "cat",
             "*cat",
             "cat*",
-        )) {
-            val m = WildMatch.new(pattern)
-            assertTrue(m.matches("cat"), "pattern $pattern should match 'cat'")
+        )
+        for (pattern in patterns) {
+            val matcher = WildMatch.new(pattern)
+            assertTrue(matcher.matches("cat"), "pattern $pattern should match cat")
         }
     }
 
@@ -93,14 +94,14 @@ class LibTest {
             "К**" to "коТ",
         )
         for ((pattern, input) in cases) {
-            val m = WildMatch.newCaseInsensitive(pattern)
-            assertTrue(m.matches(input), "pattern $pattern should match $input case-insensitively")
+            val matcher = WildMatch.newCaseInsensitive(pattern)
+            assertTrue(matcher.matches(input), "case-insensitive pattern $pattern should match $input")
         }
     }
 
     @Test
     fun noMatch() {
-        for (pattern in listOf(
+        val patterns = listOf(
             "*d*",
             "*d",
             "d*",
@@ -115,9 +116,10 @@ class LibTest {
             "cacat",
             "cat*dog",
             "CAT",
-        )) {
-            val m = WildMatch.new(pattern)
-            assertFalse(m.matches("cat"), "pattern $pattern should not match 'cat'")
+        )
+        for (pattern in patterns) {
+            val matcher = WildMatch.new(pattern)
+            assertFalse(matcher.matches("cat"), "pattern $pattern should NOT match cat")
         }
     }
 
@@ -140,8 +142,11 @@ class LibTest {
             "???" to "wildcats",
         )
         for ((pattern, expected) in cases) {
-            val m = WildMatch.new(pattern)
-            assertFalse(m.matches(expected), "pattern '$pattern' should not match '$expected'")
+            val matcher = WildMatch.new(pattern)
+            assertFalse(
+                matcher.matches(expected),
+                "pattern $pattern should NOT match $expected",
+            )
         }
     }
 
@@ -193,8 +198,11 @@ class LibTest {
             "*?" to "xx",
         )
         for ((pattern, expected) in cases) {
-            val m = WildMatch.new(pattern)
-            assertTrue(m.matches(expected), "Expected pattern $pattern to match $expected")
+            val matcher = WildMatch.new(pattern)
+            assertTrue(
+                matcher.matches(expected),
+                "Expected pattern $pattern to match $expected",
+            )
         }
     }
 
@@ -207,8 +215,8 @@ class LibTest {
             "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
             "Lorem ipsum dolor sit amet."
         val complexPattern = "Lorem?ipsum*dolore*ea* ?????ata*."
-        val m = WildMatch.new(complexPattern)
-        assertTrue(m.matches(text))
+        val matcher = WildMatch.new(complexPattern)
+        assertTrue(matcher.matches(text))
     }
 
     @Test
@@ -220,30 +228,30 @@ class LibTest {
             "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
             "Lorem ipsum dolor sit amet."
         val complexPattern = "Lorem_ipsum%dolore%ea% _____ata%."
-        val m = WildMatchPattern.new('%', '_', complexPattern)
-        assertTrue(m.matches(text))
+        val matcher = WildMatchPattern.new(complexPattern, '%', '_')
+        assertTrue(matcher.matches(text))
     }
 
     @Test
     fun compareViaEqual() {
-        val m = WildMatch.new("c?*")
-        assertTrue(m.matches("cat"))
-        assertTrue(m.matches("car"))
-        assertFalse(m.matches("dog"))
+        val matcher = WildMatch.new("c?*")
+        assertTrue(matcher.equals("cat"))
+        assertTrue(matcher.equals("car"))
+        assertFalse(matcher.equals("dog"))
     }
 
     @Test
     fun compareEmpty() {
-        val m = WildMatch.new("")
-        assertFalse(m.matches("bar"))
-        assertTrue(m.matches(""))
+        val matcher = WildMatch.new("")
+        assertFalse(matcher.equals("bar"))
+        assertTrue(matcher.equals(""))
     }
 
     @Test
     fun compareDefault() {
-        val m = WildMatch.default()
-        assertTrue(m.matches(""))
-        assertFalse(m.matches("bar"))
+        val matcher = WildMatch.default()
+        assertTrue(matcher.equals(""))
+        assertFalse(matcher.equals("bar"))
     }
 
     @Test
@@ -258,14 +266,14 @@ class LibTest {
 
     @Test
     fun printString() {
-        val m = WildMatch.new("Foo/Bar")
-        assertEquals("Foo/Bar", m.toString())
+        val matcher = WildMatch.new("Foo/Bar")
+        assertEquals("Foo/Bar", matcher.toString())
     }
 
     @Test
     fun toStringF() {
-        val m = WildMatch.new("F")
-        assertEquals("F", m.toString())
+        val matcher = WildMatch.new("F")
+        assertEquals("F", matcher.toString())
     }
 
     @Test
@@ -283,12 +291,40 @@ class LibTest {
 
     @Test
     fun toStringEmpty() {
-        val m = WildMatch.new("")
-        assertEquals("", m.toString())
+        val matcher = WildMatch.new("")
+        assertEquals("", matcher.toString())
     }
 
-    private fun randomAlphanumeric(rng: Random): Char {
-        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return alphabet[rng.nextInt(0, alphabet.length)]
+    @Test
+    fun compareToOrdersPatternsLexicographically() {
+        val a = WildMatch.new("abc")
+        val b = WildMatch.new("abd")
+        val c = WildMatch.new("abc")
+        assertTrue(a < b)
+        assertTrue(b > a)
+        assertEquals(0, a.compareTo(c))
+    }
+
+    @Test
+    fun compareToOrdersByShorterPatternFirst() {
+        val shorter = WildMatch.new("ab")
+        val longer = WildMatch.new("abc")
+        assertTrue(shorter < longer)
+    }
+
+    @Test
+    fun compareToOrdersCaseSensitiveBeforeCaseInsensitive() {
+        val sensitive = WildMatch.new("abc")
+        val insensitive = WildMatch.newCaseInsensitive("abc")
+        assertTrue(sensitive < insensitive)
+    }
+}
+
+private fun randomAlphanumericChar(rng: Random): Char {
+    val idx = rng.nextInt(0, 62)
+    return when {
+        idx < 26 -> ('A' + idx)
+        idx < 52 -> ('a' + (idx - 26))
+        else -> ('0' + (idx - 52))
     }
 }
