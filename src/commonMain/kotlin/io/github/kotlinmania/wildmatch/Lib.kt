@@ -78,13 +78,6 @@ class WildMatchPattern private constructor(
         }
     }
 
-    @Deprecated(
-        message = "use matches instead",
-        replaceWith = ReplaceWith("matches(input)"),
-        level = DeprecationLevel.WARNING,
-    )
-    fun isMatch(input: String): Boolean = matches(input)
-
     /** Returns true if pattern applies to the given input string. */
     fun matches(input: String): Boolean {
         if (pattern.isEmpty()) {
