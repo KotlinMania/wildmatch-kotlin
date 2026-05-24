@@ -1,13 +1,14 @@
 // port-lint: source src/lib.rs
 package io.github.kotlinmania.wildmatch
 
-import kotlinx.serialization.Serializable
-
 /**
  * Match strings against a simple wildcard pattern.
- * Tests a wildcard pattern `p` against an input string `s`. Returns true only when `p` matches the entirety of `s`.
  *
- * See also the example described on [wikipedia](https://en.wikipedia.org/wiki/Matching_wildcards) for matching wildcards.
+ * Tests a wildcard pattern `p` against an input string `s`. Returns true only
+ * when `p` matches the entirety of `s`.
+ *
+ * See also the example described on [wikipedia](https://en.wikipedia.org/wiki/Matching_wildcards)
+ * for matching wildcards.
  *
  * No escape characters are defined.
  *
@@ -30,25 +31,28 @@ import kotlinx.serialization.Serializable
  * ```
  *
  * You can specify custom [Char] values for the single and multi-character
- * wildcards. For example, to use `%` as the multi-character wildcard and
- * `_` as the single-character wildcard:
+ * wildcards. For example, to use `%` as the multi-character wildcard and `_`
+ * as the single-character wildcard:
  * ```
- * check(WildMatchPattern.new('%', '_', "%cat%").matches("dog_cat_dog"))
+ * check(WildMatchPattern.new("%cat%", '%', '_').matches("dog_cat_dog"))
  * ```
  */
 
 /**
- * A wildcard matcher using `*` as the multi-character wildcard and `?` as
- * the single-character wildcard.
+ * A wildcard matcher using `*` as the multi-character wildcard and `?` as the
+ * single-character wildcard.
  */
-public object WildMatch {
-    public fun new(pattern: String): WildMatchPattern =
-        WildMatchPattern.new('*', '?', pattern)
+object WildMatch {
+    /** Constructor with pattern which can be used for matching. */
+    fun new(pattern: String): WildMatchPattern =
+        WildMatchPattern.new(pattern, '*', '?')
 
-    public fun newCaseInsensitive(pattern: String): WildMatchPattern =
-        WildMatchPattern.newCaseInsensitive('*', '?', pattern)
+    /** Constructor with pattern which can be used for matching with case-insensitive comparison. */
+    fun newCaseInsensitive(pattern: String): WildMatchPattern =
+        WildMatchPattern.newCaseInsensitive(pattern, '*', '?')
 
-    public fun default(): WildMatchPattern =
+    /** Produces an empty pattern with the default `*` / `?` wildcards. */
+    fun default(): WildMatchPattern =
         WildMatchPattern.default('*', '?')
 }
 
@@ -59,90 +63,74 @@ public object WildMatch {
  * wildcard (e.g., `*`), and [singleWildcard] is the character used to
  * represent a single-character wildcard (e.g., `?`).
  *
- * # Throws
- *
  * Throws [IllegalArgumentException] at construction time if both wildcard
  * characters are identical.
- *
- * # Examples
- *
- * ```
- * // Throws: '*' cannot be both wildcards.
- * // WildMatchPattern.new('*', '*', "")
- *
- * // Throws: '*' cannot be both wildcards.
- * // WildMatchPattern.newCaseInsensitive('*', '*', "")
- *
- * // OK.
- * WildMatchPattern.new('*', '?', "")
- *
- * // OK.
- * WildMatchPattern.newCaseInsensitive('*', '?', "")
- * ```
  */
-@Serializable
-public class WildMatchPattern public constructor(
-    public val multiWildcard: Char,
-    public val singleWildcard: Char,
+class WildMatchPattern private constructor(
+    val multiWildcard: Char,
+    val singleWildcard: Char,
     private val pattern: List<Char>,
-    private val caseInsensitive: Boolean,
+    val isCaseInsensitive: Boolean,
 ) : Comparable<WildMatchPattern> {
-
     init {
         require(multiWildcard != singleWildcard) {
             "single and multi wildcards cannot be the same"
         }
     }
 
-    override fun toString(): String {
-        val sb = StringBuilder(pattern.size)
-        for (c in pattern) {
-            sb.append(c)
-        }
-        return sb.toString()
-    }
+    @Deprecated(
+        message = "use matches instead",
+        replaceWith = ReplaceWith("matches(input)"),
+        level = DeprecationLevel.WARNING,
+    )
+    fun isMatch(input: String): Boolean = matches(input)
 
-    /** Returns true if pattern applies to the given input string */
-    public fun matches(input: String): Boolean {
+    /** Returns true if pattern applies to the given input string. */
+    fun matches(input: String): Boolean {
         if (pattern.isEmpty()) {
             return input.isEmpty()
         }
+        val inputChars = input.toCharArray()
+        var inputCursor = 0
         var patternIdx = 0
-        if (input.isNotEmpty()) {
-            var inputChar = input[0]
-            var inputPos = 1
-            val none = -1
+        if (inputCursor < inputChars.size) {
+            var inputChar = inputChars[inputCursor]
+            inputCursor += 1
+            val none = Int.MAX_VALUE
             var startIdx = none
-            var matchedPos = 0
+            var matchedCursor = 0
 
-            loop@ while (true) {
+            while (true) {
                 if (patternIdx < pattern.size && pattern[patternIdx] == multiWildcard) {
                     startIdx = patternIdx
-                    matchedPos = inputPos
+                    matchedCursor = inputCursor
                     patternIdx += 1
-                } else if (
-                    patternIdx < pattern.size &&
-                    (pattern[patternIdx] == singleWildcard ||
-                        pattern[patternIdx] == inputChar ||
-                        (caseInsensitive &&
-                            pattern[patternIdx].lowercase() == inputChar.lowercase()))
+                } else if (patternIdx < pattern.size &&
+                    (
+                        pattern[patternIdx] == singleWildcard ||
+                            pattern[patternIdx] == inputChar ||
+                            (
+                                isCaseInsensitive &&
+                                    pattern[patternIdx].lowercase() == inputChar.lowercase()
+                                )
+                        )
                 ) {
                     patternIdx += 1
-                    if (inputPos < input.length) {
-                        inputChar = input[inputPos]
-                        inputPos += 1
+                    if (inputCursor < inputChars.size) {
+                        inputChar = inputChars[inputCursor]
+                        inputCursor += 1
                     } else {
-                        break@loop
+                        break
                     }
                 } else if (startIdx != none) {
                     patternIdx = startIdx + 1
-                    if (matchedPos < input.length) {
-                        inputChar = input[matchedPos]
-                        matchedPos += 1
+                    if (matchedCursor < inputChars.size) {
+                        inputChar = inputChars[matchedCursor]
+                        matchedCursor += 1
+                        inputCursor = matchedCursor
                     } else {
-                        break@loop
+                        break
                     }
-                    inputPos = matchedPos
                 } else {
                     return false
                 }
@@ -153,65 +141,67 @@ public class WildMatchPattern public constructor(
             patternIdx += 1
         }
 
-        // If we have reached the end of both the pattern and the text, the pattern matches the text.
+        // A match consumed both the pattern and the text.
         return patternIdx == pattern.size
     }
 
     /**
      * Returns the pattern string.
+     *
      * N.B. Consecutive multi-wildcards are simplified to a single multi-wildcard.
      */
-    public fun pattern(): String {
-        val sb = StringBuilder(pattern.size)
-        for (c in pattern) {
-            sb.append(c)
-        }
-        return sb.toString()
-    }
+    fun pattern(): String = pattern.joinToString("")
 
     /** Returns the pattern string as a list of chars. */
-    public fun patternChars(): List<Char> = pattern
+    fun patternChars(): List<Char> = pattern
 
-    /** Returns if the pattern is case-insensitive. */
-    public fun isCaseInsensitive(): Boolean = caseInsensitive
+    /** Returns the pattern formatted as a string of characters. */
+    override fun toString(): String = pattern.joinToString("")
 
-    @Deprecated("use matches instead", ReplaceWith("matches(input)"))
-    public fun isMatch(input: String): Boolean = this.matches(input)
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is WildMatchPattern) return false
-        return multiWildcard == other.multiWildcard &&
-            singleWildcard == other.singleWildcard &&
-            pattern == other.pattern &&
-            caseInsensitive == other.caseInsensitive
+    /**
+     * Equality combines structural equality between [WildMatchPattern] instances
+     * with pattern matching against a [String].
+     */
+    override fun equals(other: Any?): Boolean = when (other) {
+        is WildMatchPattern ->
+            multiWildcard == other.multiWildcard &&
+                singleWildcard == other.singleWildcard &&
+                isCaseInsensitive == other.isCaseInsensitive &&
+                pattern == other.pattern
+        is String -> matches(other)
+        else -> false
     }
 
     override fun hashCode(): Int {
         var result = multiWildcard.hashCode()
         result = 31 * result + singleWildcard.hashCode()
         result = 31 * result + pattern.hashCode()
-        result = 31 * result + caseInsensitive.hashCode()
+        result = 31 * result + isCaseInsensitive.hashCode()
         return result
     }
 
+    /** Lexicographic comparison over wildcard chars, pattern chars, then mode. */
     override fun compareTo(other: WildMatchPattern): Int {
-        val n = minOf(pattern.size, other.pattern.size)
-        for (i in 0 until n) {
-            val cmp = pattern[i].compareTo(other.pattern[i])
-            if (cmp != 0) return cmp
+        val byMulti = multiWildcard.compareTo(other.multiWildcard)
+        if (byMulti != 0) return byMulti
+        val bySingle = singleWildcard.compareTo(other.singleWildcard)
+        if (bySingle != 0) return bySingle
+        val shorter = if (pattern.size < other.pattern.size) pattern.size else other.pattern.size
+        for (i in 0 until shorter) {
+            val byChar = pattern[i].compareTo(other.pattern[i])
+            if (byChar != 0) return byChar
         }
-        val sizeCmp = pattern.size.compareTo(other.pattern.size)
-        if (sizeCmp != 0) return sizeCmp
-        return caseInsensitive.compareTo(other.caseInsensitive)
+        val byLen = pattern.size.compareTo(other.pattern.size)
+        if (byLen != 0) return byLen
+        return isCaseInsensitive.compareTo(other.isCaseInsensitive)
     }
 
-    public companion object {
+    companion object {
         /** Constructor with pattern which can be used for matching. */
-        public fun new(
+        fun new(
+            pattern: String,
             multiWildcard: Char,
             singleWildcard: Char,
-            pattern: String,
         ): WildMatchPattern {
             require(multiWildcard != singleWildcard) {
                 "single and multi wildcards cannot be the same"
@@ -221,20 +211,20 @@ public class WildMatchPattern public constructor(
             var newLen = simplified.size
             var wildcardCount = 0
 
-            for (idx in (simplified.size - 1) downTo 0) {
+            for (idx in simplified.indices.reversed()) {
                 if (simplified[idx] == multiWildcard) {
                     wildcardCount += 1
                 } else {
                     if (wildcardCount > 1) {
                         newLen -= wildcardCount - 1
-                        rotateLeftInPlace(simplified, idx + 1, simplified.size, wildcardCount - 1)
+                        rotateLeft(simplified, idx + 1, simplified.size, wildcardCount - 1)
                     }
                     wildcardCount = 0
                 }
             }
             if (wildcardCount > 1) {
                 newLen -= wildcardCount - 1
-                rotateLeftInPlace(simplified, 0, simplified.size, wildcardCount - 1)
+                rotateLeft(simplified, 0, simplified.size, wildcardCount - 1)
             }
 
             while (simplified.size > newLen) {
@@ -245,53 +235,51 @@ public class WildMatchPattern public constructor(
                 multiWildcard = multiWildcard,
                 singleWildcard = singleWildcard,
                 pattern = simplified.toList(),
-                caseInsensitive = false,
+                isCaseInsensitive = false,
             )
         }
 
-        /** Constructor with pattern which can be used for matching with case-insensitive comparison. */
-        public fun newCaseInsensitive(
+        /**
+         * Constructor with pattern which can be used for matching with
+         * case-insensitive comparison.
+         */
+        fun newCaseInsensitive(
+            pattern: String,
             multiWildcard: Char,
             singleWildcard: Char,
-            pattern: String,
         ): WildMatchPattern {
-            val m = new(multiWildcard, singleWildcard, pattern)
+            val base = new(pattern, multiWildcard, singleWildcard)
             return WildMatchPattern(
-                multiWildcard = m.multiWildcard,
-                singleWildcard = m.singleWildcard,
-                pattern = m.pattern,
-                caseInsensitive = true,
+                multiWildcard = base.multiWildcard,
+                singleWildcard = base.singleWildcard,
+                pattern = base.pattern,
+                isCaseInsensitive = true,
             )
         }
 
-        public fun default(multiWildcard: Char, singleWildcard: Char): WildMatchPattern {
-            return WildMatchPattern(
+        /** Constructs an empty [WildMatchPattern] with the supplied wildcard characters. */
+        fun default(multiWildcard: Char, singleWildcard: Char): WildMatchPattern =
+            WildMatchPattern(
                 multiWildcard = multiWildcard,
                 singleWildcard = singleWildcard,
                 pattern = emptyList(),
-                caseInsensitive = false,
+                isCaseInsensitive = false,
             )
-        }
 
-        private fun rotateLeftInPlace(
-            list: MutableList<Char>,
-            from: Int,
-            end: Int,
-            n: Int,
-        ) {
-            val len = end - from
-            if (len <= 1 || n == 0) return
-            val shift = ((n % len) + len) % len
-            if (shift == 0) return
-            val temp = ArrayList<Char>(shift)
-            for (i in 0 until shift) {
-                temp.add(list[from + i])
+        private fun rotateLeft(list: MutableList<Char>, start: Int, end: Int, by: Int) {
+            val len = end - start
+            if (len <= 1 || by == 0) return
+            val k = ((by % len) + len) % len
+            if (k == 0) return
+            val head = ArrayList<Char>(k)
+            for (i in 0 until k) {
+                head.add(list[start + i])
             }
-            for (i in shift until len) {
-                list[from + i - shift] = list[from + i]
+            for (i in 0 until len - k) {
+                list[start + i] = list[start + k + i]
             }
-            for (i in 0 until shift) {
-                list[end - shift + i] = temp[i]
+            for (i in 0 until k) {
+                list[start + len - k + i] = head[i]
             }
         }
     }
