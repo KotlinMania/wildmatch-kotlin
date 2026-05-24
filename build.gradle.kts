@@ -207,12 +207,14 @@ kotlin {
     iosSimulatorArm64 {
         binaries.framework {
             baseName = "Wildmatch"
+            isStatic = true
             xcf.add(this)
         }
     }
     iosX64 {
         binaries.framework {
             baseName = "Wildmatch"
+            isStatic = true
             xcf.add(this)
         }
     }
