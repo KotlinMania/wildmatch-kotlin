@@ -220,7 +220,7 @@ class LibTest {
             "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
             "Lorem ipsum dolor sit amet."
         val complexPattern = "Lorem_ipsum%dolore%ea% _____ata%."
-        val m = WildMatchPattern.new('%', '_', complexPattern)
+        val m = WildMatchPattern.new(complexPattern, '%', '_')
         assertTrue(m.matches(text))
     }
 
