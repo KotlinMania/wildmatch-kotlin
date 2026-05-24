@@ -4,8 +4,8 @@ package io.github.kotlinmania.wildmatch
 /**
  * Match strings against a simple wildcard pattern.
  *
- * Tests a wildcard pattern `p` against an input string `s`. Returns true only when `p` matches
- * the entirety of `s`.
+ * Tests a wildcard pattern `p` against an input string `s`. Returns true only
+ * when `p` matches the entirety of `s`.
  *
  * See also the example described on [wikipedia](https://en.wikipedia.org/wiki/Matching_wildcards)
  * for matching wildcards.
@@ -30,42 +30,41 @@ package io.github.kotlinmania.wildmatch
  * check(!WildMatch.new("?").matches("cat"))
  * ```
  *
- * You can specify custom [Char] values for the single and multi-character wildcards. For example,
- * to use `%` as the multi-character wildcard and `_` as the single-character wildcard:
+ * You can specify custom [Char] values for the single and multi-character
+ * wildcards. For example, to use `%` as the multi-character wildcard and `_`
+ * as the single-character wildcard:
  * ```
  * check(WildMatchPattern.new("%cat%", '%', '_').matches("dog_cat_dog"))
  * ```
  */
 
 /**
+ * A wildcard matcher using `*` as the multi-character wildcard and `?` as the
+ * single-character wildcard.
+ */
+object WildMatch {
+    /** Constructor with pattern which can be used for matching. */
+    fun new(pattern: String): WildMatchPattern =
+        WildMatchPattern.new(pattern, '*', '?')
+
+    /** Constructor with pattern which can be used for matching with case-insensitive comparison. */
+    fun newCaseInsensitive(pattern: String): WildMatchPattern =
+        WildMatchPattern.newCaseInsensitive(pattern, '*', '?')
+
+    /** Produces an empty pattern with the default `*` / `?` wildcards. */
+    fun default(): WildMatchPattern =
+        WildMatchPattern.default('*', '?')
+}
+
+/**
  * Wildcard matcher used to match strings.
  *
- * [multiWildcard] is the character used to represent a multiple-character wildcard (e.g., `*`),
- * and [singleWildcard] is the character used to represent a single-character wildcard
- * (e.g., `?`).
+ * [multiWildcard] is the character used to represent a multiple-character
+ * wildcard (e.g., `*`), and [singleWildcard] is the character used to
+ * represent a single-character wildcard (e.g., `?`).
  *
- * Throws [IllegalArgumentException] at construction time if both wildcard characters are identical.
- *
- * Examples:
- * ```
- * // Fails to construct: '*' cannot be both wildcards.
- * WildMatchPattern.new("", '*', '*')
- * ```
- *
- * ```
- * // Fails to construct: '*' cannot be both wildcards.
- * WildMatchPattern.newCaseInsensitive("", '*', '*')
- * ```
- *
- * ```
- * // Constructs fine.
- * WildMatchPattern.new("", '*', '?')
- * ```
- *
- * ```
- * // Constructs fine.
- * WildMatchPattern.newCaseInsensitive("", '*', '?')
- * ```
+ * Throws [IllegalArgumentException] at construction time if both wildcard
+ * characters are identical.
  */
 class WildMatchPattern private constructor(
     val multiWildcard: Char,
@@ -86,7 +85,7 @@ class WildMatchPattern private constructor(
     )
     fun isMatch(input: String): Boolean = matches(input)
 
-    /** Returns true if pattern applies to the given input string */
+    /** Returns true if pattern applies to the given input string. */
     fun matches(input: String): Boolean {
         if (pattern.isEmpty()) {
             return input.isEmpty()
@@ -142,7 +141,7 @@ class WildMatchPattern private constructor(
             patternIdx += 1
         }
 
-        // If we have reached the end of both the pattern and the text, the pattern matches the text.
+        // A match consumed both the pattern and the text.
         return patternIdx == pattern.size
     }
 
@@ -160,12 +159,8 @@ class WildMatchPattern private constructor(
     override fun toString(): String = pattern.joinToString("")
 
     /**
-     * Equality combines structural equality between [WildMatchPattern] instances with
-     * pattern matching against a [String].
-     *
-     * Two patterns are structurally equal when their wildcard characters, simplified pattern
-     * contents, and case-insensitive flag all agree. When compared against a [String], the
-     * pattern is equal to the string if and only if it matches it.
+     * Equality combines structural equality between [WildMatchPattern] instances
+     * with pattern matching against a [String].
      */
     override fun equals(other: Any?): Boolean = when (other) {
         is WildMatchPattern ->
@@ -185,12 +180,7 @@ class WildMatchPattern private constructor(
         return result
     }
 
-    /**
-     * Lexicographic comparison matching the upstream `PartialOrd` derive: compare the simplified
-     * pattern char-by-char, then the case-insensitive flag (false less than true). The wildcard
-     * characters are compared first so the total ordering agrees with [equals] for Kotlin's
-     * single-class representation of the upstream const-generic struct.
-     */
+    /** Lexicographic comparison over wildcard chars, pattern chars, then mode. */
     override fun compareTo(other: WildMatchPattern): Int {
         val byMulti = multiWildcard.compareTo(other.multiWildcard)
         if (byMulti != 0) return byMulti
@@ -250,8 +240,8 @@ class WildMatchPattern private constructor(
         }
 
         /**
-         * Constructor with pattern which can be used for matching with case-insensitive
-         * comparison.
+         * Constructor with pattern which can be used for matching with
+         * case-insensitive comparison.
          */
         fun newCaseInsensitive(
             pattern: String,
@@ -267,10 +257,7 @@ class WildMatchPattern private constructor(
             )
         }
 
-        /**
-         * Constructs a default [WildMatchPattern] with the supplied wildcard characters and an
-         * empty pattern. Produced by the same shape as the upstream `Default` derive.
-         */
+        /** Constructs an empty [WildMatchPattern] with the supplied wildcard characters. */
         fun default(multiWildcard: Char, singleWildcard: Char): WildMatchPattern =
             WildMatchPattern(
                 multiWildcard = multiWildcard,
