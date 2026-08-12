@@ -9,7 +9,6 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class WildMatchPatternTest {
-
     @Test
     fun isMatchRandom() {
         val patternLen = 100
@@ -39,11 +38,12 @@ class WildMatchPatternTest {
                         input[idx] = randomAlphanumericChar(rng)
                     }
                     if (c == '*') {
-                        val replacement = buildString {
-                            repeat(rng.nextInt(0, 15)) {
-                                append(randomAlphanumericChar(rng))
+                        val replacement =
+                            buildString {
+                                repeat(rng.nextInt(0, 15)) {
+                                    append(randomAlphanumericChar(rng))
+                                }
                             }
-                        }
                         input.deleteAt(idx)
                         input.insert(idx, replacement)
                     }
@@ -59,18 +59,19 @@ class WildMatchPatternTest {
 
     @Test
     fun isMatch() {
-        val patterns = listOf(
-            "**",
-            "*",
-            "*?*",
-            "c*",
-            "c?*",
-            "???",
-            "c?t",
-            "cat",
-            "*cat",
-            "cat*",
-        )
+        val patterns =
+            listOf(
+                "**",
+                "*",
+                "*?*",
+                "c*",
+                "c?*",
+                "???",
+                "c?t",
+                "cat",
+                "*cat",
+                "cat*",
+            )
         for (pattern in patterns) {
             val matcher = WildMatch.new(pattern)
             assertTrue(matcher.matches("cat"), "pattern $pattern should match cat")
@@ -79,20 +80,21 @@ class WildMatchPatternTest {
 
     @Test
     fun isMatchCaseInsensitive() {
-        val cases = listOf(
-            "CAT" to "cat",
-            "CAT" to "CAT",
-            "CA?" to "Cat",
-            "C*" to "cAt",
-            "C?*" to "cAT",
-            "C**" to "caT",
-            "КОТ" to "кот",
-            "КОТ" to "КОТ",
-            "КО?" to "Кот",
-            "К*" to "кОт",
-            "К?*" to "кОТ",
-            "К**" to "коТ",
-        )
+        val cases =
+            listOf(
+                "CAT" to "cat",
+                "CAT" to "CAT",
+                "CA?" to "Cat",
+                "C*" to "cAt",
+                "C?*" to "cAT",
+                "C**" to "caT",
+                "КОТ" to "кот",
+                "КОТ" to "КОТ",
+                "КО?" to "Кот",
+                "К*" to "кОт",
+                "К?*" to "кОТ",
+                "К**" to "коТ",
+            )
         for ((pattern, input) in cases) {
             val matcher = WildMatch.newCaseInsensitive(pattern)
             assertTrue(matcher.matches(input), "case-insensitive pattern $pattern should match $input")
@@ -101,22 +103,23 @@ class WildMatchPatternTest {
 
     @Test
     fun noMatch() {
-        val patterns = listOf(
-            "*d*",
-            "*d",
-            "d*",
-            "*c",
-            "?",
-            "??",
-            "????",
-            "?????",
-            "*????",
-            "cats",
-            "cat?",
-            "cacat",
-            "cat*dog",
-            "CAT",
-        )
+        val patterns =
+            listOf(
+                "*d*",
+                "*d",
+                "d*",
+                "*c",
+                "?",
+                "??",
+                "????",
+                "?????",
+                "*????",
+                "cats",
+                "cat?",
+                "cacat",
+                "cat*dog",
+                "CAT",
+            )
         for (pattern in patterns) {
             val matcher = WildMatch.new(pattern)
             assertFalse(matcher.matches("cat"), "pattern $pattern should NOT match cat")
@@ -125,22 +128,23 @@ class WildMatchPatternTest {
 
     @Test
     fun noMatchLong() {
-        val cases = listOf(
-            "1" to "",
-            "?" to "",
-            "?" to "11",
-            "*1?" to "123",
-            "*12" to "122",
-            "cat?" to "wildcats",
-            "cat*" to "wildcats",
-            "*x*" to "wildcats",
-            "*a" to "wildcats",
-            "" to "wildcats",
-            " " to "wildcats",
-            " " to "\n",
-            " " to "\t",
-            "???" to "wildcats",
-        )
+        val cases =
+            listOf(
+                "1" to "",
+                "?" to "",
+                "?" to "11",
+                "*1?" to "123",
+                "*12" to "122",
+                "cat?" to "wildcats",
+                "cat*" to "wildcats",
+                "*x*" to "wildcats",
+                "*a" to "wildcats",
+                "" to "wildcats",
+                " " to "wildcats",
+                " " to "\n",
+                " " to "\t",
+                "???" to "wildcats",
+            )
         for ((pattern, expected) in cases) {
             val matcher = WildMatch.new(pattern)
             assertFalse(
@@ -152,51 +156,52 @@ class WildMatchPatternTest {
 
     @Test
     fun matchLong() {
-        val cases = listOf(
-            "*" to "",
-            "*" to "1",
-            "?" to "1",
-            "*121" to "12121",
-            "?*3" to "111333",
-            "*113" to "1113",
-            "*113" to "113",
-            "*113" to "11113",
-            "*113" to "111113",
-            "*???a" to "bbbba",
-            "*???a" to "bbbbba",
-            "*???a" to "bbbbbba",
-            "*o?a*" to "foobar",
-            "*ooo?ar" to "foooobar",
-            "*o?a*r" to "foobar",
-            "*cat*" to "d&(*og_cat_dog",
-            "*?*" to "d&(*og_cat_dog",
-            "*a*" to "d&(*og_cat_dog",
-            "a*b" to "a*xb",
-            "*" to "*",
-            "*" to "?",
-            "?" to "?",
-            "wildcats" to "wildcats",
-            "wild*cats" to "wild?cats",
-            "wi*ca*s" to "wildcats",
-            "wi*ca?s" to "wildcats",
-            "*o?" to "hog_cat_dog",
-            "*o?" to "cat_dog",
-            "*at_dog" to "cat_dog",
-            " " to " ",
-            "* " to "\n ",
-            "\n" to "\n",
-            "*32" to "432",
-            "*32" to "332",
-            "*332" to "332",
-            "*32" to "32",
-            "*32" to "3232",
-            "*32" to "3232332",
-            "*?2" to "332",
-            "*?2" to "3332",
-            "33*" to "333",
-            "da*da*da*" to "daaadabadmanda",
-            "*?" to "xx",
-        )
+        val cases =
+            listOf(
+                "*" to "",
+                "*" to "1",
+                "?" to "1",
+                "*121" to "12121",
+                "?*3" to "111333",
+                "*113" to "1113",
+                "*113" to "113",
+                "*113" to "11113",
+                "*113" to "111113",
+                "*???a" to "bbbba",
+                "*???a" to "bbbbba",
+                "*???a" to "bbbbbba",
+                "*o?a*" to "foobar",
+                "*ooo?ar" to "foooobar",
+                "*o?a*r" to "foobar",
+                "*cat*" to "d&(*og_cat_dog",
+                "*?*" to "d&(*og_cat_dog",
+                "*a*" to "d&(*og_cat_dog",
+                "a*b" to "a*xb",
+                "*" to "*",
+                "*" to "?",
+                "?" to "?",
+                "wildcats" to "wildcats",
+                "wild*cats" to "wild?cats",
+                "wi*ca*s" to "wildcats",
+                "wi*ca?s" to "wildcats",
+                "*o?" to "hog_cat_dog",
+                "*o?" to "cat_dog",
+                "*at_dog" to "cat_dog",
+                " " to " ",
+                "* " to "\n ",
+                "\n" to "\n",
+                "*32" to "432",
+                "*32" to "332",
+                "*332" to "332",
+                "*32" to "32",
+                "*32" to "3232",
+                "*32" to "3232332",
+                "*?2" to "332",
+                "*?2" to "3332",
+                "33*" to "333",
+                "da*da*da*" to "daaadabadmanda",
+                "*?" to "xx",
+            )
         for ((pattern, expected) in cases) {
             val matcher = WildMatch.new(pattern)
             assertTrue(
@@ -208,12 +213,13 @@ class WildMatchPatternTest {
 
     @Test
     fun complexPattern() {
-        val text = "Lorem ipsum dolor sit amet, " +
-            "consetetur sadipscing elitr, sed diam nonumy eirmod tempor " +
-            "invidunt ut labore et dolore magna aliquyam erat, sed diam " +
-            "voluptua. At vero eos et accusam et justo duo dolores et ea " +
-            "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
-            "Lorem ipsum dolor sit amet."
+        val text =
+            "Lorem ipsum dolor sit amet, " +
+                "consetetur sadipscing elitr, sed diam nonumy eirmod tempor " +
+                "invidunt ut labore et dolore magna aliquyam erat, sed diam " +
+                "voluptua. At vero eos et accusam et justo duo dolores et ea " +
+                "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
+                "Lorem ipsum dolor sit amet."
         val complexPattern = "Lorem?ipsum*dolore*ea* ?????ata*."
         val matcher = WildMatch.new(complexPattern)
         assertTrue(matcher.matches(text))
@@ -221,12 +227,13 @@ class WildMatchPatternTest {
 
     @Test
     fun complexPatternAlternativeWildcards() {
-        val text = "Lorem ipsum dolor sit amet, " +
-            "consetetur sadipscing elitr, sed diam nonumy eirmod tempor " +
-            "invidunt ut labore et dolore magna aliquyam erat, sed diam " +
-            "voluptua. At vero eos et accusam et justo duo dolores et ea " +
-            "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
-            "Lorem ipsum dolor sit amet."
+        val text =
+            "Lorem ipsum dolor sit amet, " +
+                "consetetur sadipscing elitr, sed diam nonumy eirmod tempor " +
+                "invidunt ut labore et dolore magna aliquyam erat, sed diam " +
+                "voluptua. At vero eos et accusam et justo duo dolores et ea " +
+                "rebum. Stet clita kasd gubergren, no sea takimata sanctus est " +
+                "Lorem ipsum dolor sit amet."
         val complexPattern = "Lorem_ipsum%dolore%ea% _____ata%."
         val matcher = WildMatchPattern.new(complexPattern, '%', '_')
         assertTrue(matcher.matches(text))
