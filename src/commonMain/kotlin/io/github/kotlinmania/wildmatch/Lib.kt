@@ -112,8 +112,8 @@ class WildMatchPattern private constructor(
                             (
                                 isCaseInsensitive &&
                                     pattern[patternIdx].lowercase() == inputChar.lowercase()
-                                )
-                        )
+                            )
+                    )
                 ) {
                     patternIdx += 1
                     if (inputCursor < inputChars.size) {
@@ -162,15 +162,16 @@ class WildMatchPattern private constructor(
      * Equality combines structural equality between [WildMatchPattern] instances
      * with pattern matching against a [String].
      */
-    override fun equals(other: Any?): Boolean = when (other) {
-        is WildMatchPattern ->
-            multiWildcard == other.multiWildcard &&
-                singleWildcard == other.singleWildcard &&
-                isCaseInsensitive == other.isCaseInsensitive &&
-                pattern == other.pattern
-        is String -> matches(other)
-        else -> false
-    }
+    override fun equals(other: Any?): Boolean =
+        when (other) {
+            is WildMatchPattern ->
+                multiWildcard == other.multiWildcard &&
+                    singleWildcard == other.singleWildcard &&
+                    isCaseInsensitive == other.isCaseInsensitive &&
+                    pattern == other.pattern
+            is String -> matches(other)
+            else -> false
+        }
 
     override fun hashCode(): Int {
         var result = multiWildcard.hashCode()
