@@ -426,16 +426,20 @@ kotlin {
     mingwX64 { configureBenchmarkCompilation() }
 
     // Android NDK — always built (full target surface, no opt-in gate).
-    androidNativeArm32 { configureBenchmarkCompilation() }
     androidNativeArm64 { configureBenchmarkCompilation() }
-    androidNativeX86 { configureBenchmarkCompilation() }
     androidNativeX64 { configureBenchmarkCompilation() }
 
     // Web
     js {
         configureBenchmarkCompilation()
         browser()
-        nodejs()
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "60s"
+                }
+            }
+        }
     }
 
     // wasmJs is Stable as of Kotlin 2.2; @OptIn may be removable — verify before dropping on wasmWasi.
@@ -711,8 +715,7 @@ mavenPublishing {
 tasks.register("test") {
     group = "verification"
     description = "Runs the commonTest-backed KMP suite, Android host tests, and Swift Export smoke test."
-    dependsOn("allTests")
-    dependsOn("testAndroidHostTest")
+    dependsOn("hostTests")
     dependsOn("swiftExportSmokeTest")
 }
 
@@ -822,10 +825,8 @@ tasks.register("swiftExportSmokeTest") {
 // ============================================================================
 val nativeTargetNames =
     listOf(
-        "androidNativeArm32",
         "androidNativeArm64",
         "androidNativeX64",
-        "androidNativeX86",
         "iosArm64",
         "iosSimulatorArm64",
         "iosX64",

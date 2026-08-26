@@ -1,4 +1,4 @@
-// port-lint: source src/lib.rs
+// port-lint: source lib.rs
 package io.github.kotlinmania.wildmatch
 
 /**
@@ -7,8 +7,7 @@ package io.github.kotlinmania.wildmatch
  * Tests a wildcard pattern `p` against an input string `s`. Returns true only
  * when `p` matches the entirety of `s`.
  *
- * See also the example described on [wikipedia](https://en.wikipedia.org/wiki/Matching_wildcards)
- * for matching wildcards.
+ * See also the example described on Wikipedia for matching wildcards.
  *
  * No escape characters are defined.
  *
@@ -18,7 +17,7 @@ package io.github.kotlinmania.wildmatch
  * Examples matching wildcards:
  * ```
  * check(WildMatch.new("cat").matches("cat"))
- * check(WildMatch.new("*cat*").matches("dog_cat_dog"))
+ * check(WildMatch.new("*cat*").matches("dogcatdog"))
  * check(WildMatch.new("c?t").matches("cat"))
  * check(WildMatch.new("c?t").matches("cot"))
  * ```
@@ -31,10 +30,10 @@ package io.github.kotlinmania.wildmatch
  * ```
  *
  * You can specify custom [Char] values for the single and multi-character
- * wildcards. For example, to use `%` as the multi-character wildcard and `_`
+ * wildcards. For example, to use `%` as the multi-character wildcard and `#`
  * as the single-character wildcard:
  * ```
- * check(WildMatchPattern.new("%cat%", '%', '_').matches("dog_cat_dog"))
+ * check(WildMatchPattern.new("%cat%", '%', '#').matches("dogcatdog"))
  * ```
  */
 
@@ -70,7 +69,7 @@ class WildMatchPattern private constructor(
     val multiWildcard: Char,
     val singleWildcard: Char,
     private val pattern: List<Char>,
-    val isCaseInsensitive: Boolean,
+    private val caseInsensitive: Boolean,
 ) : Comparable<WildMatchPattern> {
     init {
         require(multiWildcard != singleWildcard) {
@@ -110,7 +109,7 @@ class WildMatchPattern private constructor(
                         pattern[patternIdx] == singleWildcard ||
                             pattern[patternIdx] == inputChar ||
                             (
-                                isCaseInsensitive &&
+                                caseInsensitive &&
                                     pattern[patternIdx].lowercase() == inputChar.lowercase()
                             )
                     )
@@ -155,6 +154,15 @@ class WildMatchPattern private constructor(
     /** Returns the pattern string as a list of chars. */
     fun patternChars(): List<Char> = pattern
 
+    /** Formats the pattern into a string representation. */
+    fun fmt(): String = pattern.joinToString("")
+
+    /** Returns whether the pattern is case-insensitive. */
+    fun isCaseInsensitive(): Boolean = caseInsensitive
+
+    /** Returns true if the pattern matches the given string. */
+    fun eq(other: String): Boolean = matches(other)
+
     /** Returns the pattern formatted as a string of characters. */
     override fun toString(): String = pattern.joinToString("")
 
@@ -167,7 +175,7 @@ class WildMatchPattern private constructor(
             is WildMatchPattern ->
                 multiWildcard == other.multiWildcard &&
                     singleWildcard == other.singleWildcard &&
-                    isCaseInsensitive == other.isCaseInsensitive &&
+                    caseInsensitive == other.caseInsensitive &&
                     pattern == other.pattern
             is String -> matches(other)
             else -> false
@@ -177,7 +185,7 @@ class WildMatchPattern private constructor(
         var result = multiWildcard.hashCode()
         result = 31 * result + singleWildcard.hashCode()
         result = 31 * result + pattern.hashCode()
-        result = 31 * result + isCaseInsensitive.hashCode()
+        result = 31 * result + caseInsensitive.hashCode()
         return result
     }
 
@@ -194,7 +202,7 @@ class WildMatchPattern private constructor(
         }
         val byLen = pattern.size.compareTo(other.pattern.size)
         if (byLen != 0) return byLen
-        return isCaseInsensitive.compareTo(other.isCaseInsensitive)
+        return caseInsensitive.compareTo(other.caseInsensitive)
     }
 
     companion object {
@@ -236,7 +244,7 @@ class WildMatchPattern private constructor(
                 multiWildcard = multiWildcard,
                 singleWildcard = singleWildcard,
                 pattern = simplified.toList(),
-                isCaseInsensitive = false,
+                caseInsensitive = false,
             )
         }
 
@@ -254,7 +262,7 @@ class WildMatchPattern private constructor(
                 multiWildcard = base.multiWildcard,
                 singleWildcard = base.singleWildcard,
                 pattern = base.pattern,
-                isCaseInsensitive = true,
+                caseInsensitive = true,
             )
         }
 
@@ -264,7 +272,7 @@ class WildMatchPattern private constructor(
                 multiWildcard = multiWildcard,
                 singleWildcard = singleWildcard,
                 pattern = emptyList(),
-                isCaseInsensitive = false,
+                caseInsensitive = false,
             )
 
         private fun rotateLeft(list: MutableList<Char>, start: Int, end: Int, by: Int) {
