@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 import Wildmatch
 
 // Smoke test for the Kotlin → Swift Export → SPM → swift test pipeline.
@@ -28,8 +28,8 @@ import Wildmatch
 // Add more meaningful per-API tests below as the Swift Export surface
 // grows. For now the import + a single passing assertion is the
 // canary that the pipeline is green for this repo.
-final class WildmatchExportTests: XCTestCase {
-    func testSwiftModuleLoads() throws {
-        XCTAssertTrue(true, "Wildmatch swift module imported cleanly")
+@Suite struct WildmatchExportTests {
+    @Test func swiftModuleLoads() throws {
+        #expect(true, "Wildmatch swift module imported cleanly")
     }
 }
