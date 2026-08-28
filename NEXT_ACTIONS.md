@@ -8,7 +8,7 @@ Based on AST analysis, here are the concrete next steps.
 - **Function parity:** 25/25 matched (target 57) — 100.0%
 - **Class/type parity:** 2/2 matched (target 4) — 100.0%
 - **Combined symbol parity:** 27/27 matched (target 61) — 100.0%
-- **Average inline-code cosine:** 0.68 (function body across 1 matched files)
+- **Average inline-code cosine:** 0.70 (function body across 1 matched files)
 - **Average documentation cosine:** 0.81 (doc text across 1 matched files)
 - **Cheat-zeroed Files:** 0
 - **Critical Issues:** 0 files with <0.60 function similarity
@@ -30,9 +30,9 @@ Every matched file is listed below with function and type symbol parity.
 ### 1. lib
 
 - **Target:** `wildmatch.Lib`
-- **Similarity:** 0.68
+- **Similarity:** 0.70
 - **Dependents:** 0
-- **Priority Score:** 2703.2
+- **Priority Score:** 2703.0
 - **Functions:** 25/25 matched (target 57)
 - **Missing functions:** _none_
 - **Types:** 2/2 matched (target 4)
