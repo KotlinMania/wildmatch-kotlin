@@ -30,6 +30,6 @@ import Wildmatch
 // canary that the pipeline is green for this repo.
 @Suite struct WildmatchExportTests {
     @Test func swiftModuleLoads() throws {
-        #expect(true, "Wildmatch swift module imported cleanly")
+        #expect(Bool(true), "Wildmatch swift module imported cleanly")
     }
 }
