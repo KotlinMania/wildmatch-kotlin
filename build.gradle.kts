@@ -11,10 +11,10 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec
-import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootEnvSpec
 import java.io.ByteArrayInputStream
@@ -48,60 +48,15 @@ val commonMainDependencyBundle =
         .findBundle(commonMainBundleName)
         .orElseThrow { GradleException("Missing libs bundle '$commonMainBundleName'") }
 
-fun csvProperty(name: String): Set<String> =
-    providers
-        .gradleProperty(name)
-        .map { value ->
-            value
-                .split(",")
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .toSet()
-        }.getOrElse(emptySet())
-
-fun optionalTrimmedProperty(name: String): String? =
-    providers
-        .gradleProperty(name)
-        .map { it.trim() }
-        .orNull
-        ?.takeIf { it.isNotEmpty() }
-
-val enabledFeatureNames = csvProperty("project.features")
-val benchmarkEnabled = "benchmark" in enabledFeatureNames
-val benchmarkTargetNames = csvProperty("project.benchmark.targets")
-val commonBenchmarkBundleName = optionalTrimmedProperty("project.dependencies.commonBenchmarkBundle")
-val commonBenchmarkDependencyBundle =
-    commonBenchmarkBundleName?.let { bundleName ->
-        extensions
-            .getByType(VersionCatalogsExtension::class.java)
-            .named("libs")
-            .findBundle(bundleName)
-            .orElseThrow { GradleException("Missing libs bundle '$bundleName'") }
-    }
-if (benchmarkEnabled && commonBenchmarkDependencyBundle == null) {
-    throw GradleException("Feature 'benchmark' requires project.dependencies.commonBenchmarkBundle")
-}
-val benchmarkWarmups = providers.gradleProperty("project.benchmark.warmups").map { it.toInt() }.getOrElse(3)
-val benchmarkIterations = providers.gradleProperty("project.benchmark.iterations").map { it.toInt() }.getOrElse(5)
-val benchmarkIterationTime = providers.gradleProperty("project.benchmark.iterationTime").map { it.toLong() }.getOrElse(1L)
-val benchmarkIterationTimeUnit = providers.gradleProperty("project.benchmark.iterationTimeUnit").getOrElse("s")
-val intellijCoroutinesVersion =
-    providers.gradleProperty("versions.intellij.coroutines").getOrElse("1.10.2-intellij-1")
-
-// KGP runs Swift Export in an isolated worker whose classpath is
-// `swiftExportClasspath`. Adding a dependency disables KGP's default
-// dependency population, so keep the default embeddable runner explicit too.
-val projectDependencyHandler = project.dependencies
-configurations.configureEach {
-    if (name == "swiftExportClasspath") {
-        dependencies.add(projectDependencyHandler.create("org.jetbrains.kotlin:swift-export-embeddable:$kotlinVersion"))
-        dependencies.add(
-            projectDependencyHandler.create(
-                "org.jetbrains.intellij.deps.kotlinx:kotlinx-coroutines-core-jvm:$intellijCoroutinesVersion",
-            ),
-        )
-    }
-}
+// The Android Gradle plugin resolves the SDK location while Gradle builds the
+// task graph — before any task executes — so a project-local Android SDK must
+// already be installed by the time configuration runs. setup-android-sdk.sh
+// installs the SDK into this repo's own .android-sdk/ and writes
+// local.properties to point there. It runs unconditionally on every
+// configuration: the script itself is idempotent (an already-installed SDK is
+// a fast no-op), but there is deliberately no Gradle-side condition that could
+// skip the install, and no fallback to a sibling repo's SDK.
+serviceOf<ExecOperations>().exec { commandLine("bash", "./setup-android-sdk.sh") }
 
 // Opt-ins shared across Kotlin targets.
 val commonOptIns =
@@ -347,6 +302,12 @@ kotlin {
 
     applyDefaultHierarchyTemplate()
 
+    sourceSets.all {
+        languageSettings.optIn("kotlin.time.ExperimentalTime")
+        languageSettings.optIn("kotlin.concurrent.atomics.ExperimentalAtomicApi")
+        languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
+    }
+
     compilerOptions {
         languageVersion.set(KotlinVersion.KOTLIN_2_4)
         apiVersion.set(KotlinVersion.KOTLIN_2_4)
@@ -381,49 +342,41 @@ kotlin {
 
     // Apple — Tier 1/2 targets
     macosArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     iosArm64 {
-        configureBenchmarkCompilation()
-        addToXcf(static = true)
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     iosSimulatorArm64 {
-        configureBenchmarkCompilation()
-        addToXcf(static = true)
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
+    iosX64 {
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
+    }
+
     tvosArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     tvosSimulatorArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
+    }
+
+    watchosArm32 {
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     watchosArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     watchosDeviceArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
     watchosSimulatorArm64 {
-        configureBenchmarkCompilation()
-        addToXcf()
+        binaries.framework { baseName = "Wildmatch"; xcf.add(this) }
     }
 
-    // iosX64: Intel Mac simulator. Tier 3 in Kotlin/Native but NOT deprecated —
-    // Apple still ships x86_64 iOS simulator runtimes, so it is always built.
-    iosX64 {
-        configureBenchmarkCompilation()
-        addToXcf(static = true)
-    }
-
-    // Other native — Tier 1/2
-    linuxX64 { configureBenchmarkCompilation() }
-    linuxArm64 { configureBenchmarkCompilation() }
-    mingwX64 { configureBenchmarkCompilation() }
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     // Android NDK — always built (full target surface, no opt-in gate).
     androidNativeArm64 { configureBenchmarkCompilation() }
@@ -431,22 +384,18 @@ kotlin {
 
     // Web
     js {
-        configureBenchmarkCompilation()
         browser()
-        nodejs {
-            testTask {
-                useMocha {
-                    timeout = "60s"
-                }
-            }
-        }
+        nodejs()
     }
 
     // wasmJs is Stable as of Kotlin 2.2; @OptIn may be removable — verify before dropping on wasmWasi.
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        configureBenchmarkCompilation()
         browser()
+        nodejs()
+    }
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmWasi {
         nodejs()
     }
 
@@ -485,6 +434,8 @@ kotlin {
         }
     }
 
+    jvm()
+
     sourceSets {
         commonMain.dependencies {
             implementation(commonMainDependencyBundle)
@@ -501,6 +452,12 @@ kotlin {
                 findByName("${targetName}Benchmark")?.dependsOn(commonBenchmark)
             }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+
     }
 }
 
@@ -639,19 +596,34 @@ rootProject.extensions.configure<YarnRootEnvSpec>("kotlinYarnSpec") { version.se
 rootProject.extensions.configure<WasmYarnRootEnvSpec>("kotlinWasmYarnSpec") { version.set(wasmYarnVersion) }
 
 rootProject.extensions.configure<YarnRootExtension>("kotlinYarn") {
-    project.properties
-        .filterKeys { it.startsWith("yarn.resolution.") }
-        .forEach { (key, value) ->
-            val pkg = key.removePrefix("yarn.resolution.")
-            val ver = value as? String ?: return@forEach
-            resolution(pkg, ver)
-            resolution("**/$pkg", ver)
-        }
-    // webpack resolution sourced from kotlin-js-store/package.json (see above)
-    // rather than a yarn.resolution.webpack property, so it can never override a
-    // Dependabot bump of the store.
-    resolution("webpack", webpackVersion)
-    resolution("**/webpack", webpackVersion)
+    resolution("diff", "8.0.3")
+    resolution("**/diff", "8.0.3")
+    resolution("fast-uri", "3.1.2")
+    resolution("**/fast-uri", "3.1.2")
+    resolution("serialize-javascript", "7.0.5")
+    resolution("**/serialize-javascript", "7.0.5")
+    resolution("webpack", "5.106.2")
+    resolution("**/webpack", "5.106.2")
+    resolution("follow-redirects", "1.16.0")
+    resolution("**/follow-redirects", "1.16.0")
+    resolution("lodash", "4.18.1")
+    resolution("**/lodash", "4.18.1")
+    resolution("ajv", "8.20.0")
+    resolution("**/ajv", "8.20.0")
+    resolution("brace-expansion", "5.0.6")
+    resolution("**/brace-expansion", "5.0.6")
+    resolution("flatted", "3.4.2")
+    resolution("**/flatted", "3.4.2")
+    resolution("minimatch", "10.2.5")
+    resolution("**/minimatch", "10.2.5")
+    resolution("picomatch", "4.0.4")
+    resolution("**/picomatch", "4.0.4")
+    resolution("qs", "6.15.1")
+    resolution("**/qs", "6.15.1")
+    resolution("socket.io-parser", "4.2.6")
+    resolution("**/socket.io-parser", "4.2.6")
+    resolution("ws", "8.20.1")
+    resolution("**/ws", "8.20.1")
 }
 
 val patchedKarmaWebpackPackage =
@@ -711,28 +683,21 @@ mavenPublishing {
     }
 }
 
-// ============================================================================
-// Tasks
-// ============================================================================
-
-// Exact test lifecycle task. Without this, ./gradlew test is ambiguous between
-// Android test task names. This runs commonTest through the KMP allTests
-// lifecycle and adds the Android host + Swift Export parity tests.
-tasks.register("setupAndroidSdk") {
+tasks.register<Exec>("setupAndroidSdk") {
     group = "setup"
-    description = "Downloads and configures the project-local Android SDK. (Alias for ensureAndroidSdk)"
-    dependsOn("ensureAndroidSdk")
+    description = "Downloads and configures the project-local Android SDK."
+    commandLine("./setup-android-sdk.sh")
 }
 
-// Explicit test runner. Named hostTests to avoid shadowing the KMP allTests
-// lifecycle task. Do not use findByName/mapNotNull here: missing test tasks
-// mean the target surface drifted and must fail loudly.
-tasks.register("hostTests") {
+tasks.register("test") {
     group = "verification"
-    description = "Runs the required real test suite (jvm, macosArm64, js, wasmJs, wasmWasi, android host)."
-    dependsOn(
-        "jvmTest",
+    description =
+        "Runs the host-portable test suite (macOS + JS + WasmJS + Android unit). " +
+        "Non-host native targets (mingwX64, linuxX64) only run on their own host."
+
+    val defaultTestTasks = listOf(
         "macosArm64Test",
+        "jvmTest",
         "jsNodeTest",
         "wasmJsNodeTest",
         "wasmWasiNodeTest",
@@ -871,4 +836,38 @@ val fullTargetBuildTaskNames =
 
 tasks.named("build") {
     dependsOn(fullTargetBuildTaskNames)
+}
+
+// The generated Wasm-WASI Node test runner cannot see the filesystem unless
+// the project directory is preopened. Patch the runner before wasmWasiNodeTest.
+val patchWasmWasiNodePreopens = tasks.register("patchWasmWasiNodePreopens") {
+    description = "Preopen the project directory for the generated Wasm-WASI Node test runner."
+    group = "verification"
+    dependsOn("compileTestDevelopmentExecutableKotlinWasmWasi")
+    outputs.upToDateWhen { false }
+
+    doLast {
+        val runnerFile = layout.buildDirectory.file(
+            "compileSync/wasmWasi/test/testDevelopmentExecutable/kotlin/${rootProject.name}-test.mjs",
+        ).get().asFile
+        if (!runnerFile.exists()) {
+            // No Wasm-WASI test runner was generated (the repo has no
+            // wasmWasi test sources), so there is nothing to preopen.
+            return@doLast
+        }
+        val text = runnerFile.readText()
+        val withCwdImport = text.replace(
+            "import { argv, env } from 'node:process';",
+            "import { argv, env, cwd } from 'node:process';",
+        )
+        val patched = withCwdImport.replace(
+            "const wasi = new WASI({ version: 'preview1', args: argv, env, });",
+            "const wasi = new WASI({ version: 'preview1', args: argv, env, preopens: { '/': cwd() }, });",
+        )
+        runnerFile.writeText(patched)
+    }
+}
+
+tasks.named("wasmWasiNodeTest") {
+    dependsOn(patchWasmWasiNodePreopens)
 }
