@@ -1,4 +1,4 @@
-import Testing
+import XCTest
 import Wildmatch
 
 // Smoke test for the Kotlin → Swift Export → SPM → swift test pipeline.
@@ -24,12 +24,10 @@ import Wildmatch
 //      build.gradle.kts produced a module name that's both syntactically
 //      valid as a Swift identifier and reachable from this Package.swift
 //      via the `WildmatchLibrary` product.
-//
-// Add more meaningful per-API tests below as the Swift Export surface
-// grows. For now the import + a single passing assertion is the
-// canary that the pipeline is green for this repo.
-@Suite struct WildmatchExportTests {
-    @Test func swiftModuleLoads() throws {
-        #expect(Bool(true), "Wildmatch swift module imported cleanly")
+final class WildmatchExportTests: XCTestCase {
+    func testSwiftModuleLoads() throws {
+        let pattern = WildMatch.shared.new(pattern: "c?t*")
+        XCTAssertTrue(pattern.matches(input: "cat_dog"))
+        XCTAssertFalse(pattern.matches(input: "dog_cat"))
     }
 }
