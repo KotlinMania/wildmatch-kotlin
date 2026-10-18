@@ -1,59 +1,18 @@
-// port-lint: source lib.rs
 package io.github.kotlinmania.wildmatch
 
-/**
- * Match strings against a simple wildcard pattern.
- *
- * Tests a wildcard pattern `p` against an input string `s`. Returns true only
- * when `p` matches the entirety of `s`.
- *
- * See also the example described on Wikipedia for matching wildcards.
- *
- * No escape characters are defined.
- *
- * - `?` matches exactly one occurrence of any character.
- * - `*` matches arbitrary many (including zero) occurrences of any character.
- *
- * Examples matching wildcards:
- * ```
- * check(WildMatch.new("cat").matches("cat"))
- * check(WildMatch.new("*cat*").matches("dogcatdog"))
- * check(WildMatch.new("c?t").matches("cat"))
- * check(WildMatch.new("c?t").matches("cot"))
- * ```
- * Examples not matching wildcards:
- * ```
- * check(!WildMatch.new("dog").matches("cat"))
- * check(!WildMatch.new("*d").matches("cat"))
- * check(!WildMatch.new("????").matches("cat"))
- * check(!WildMatch.new("?").matches("cat"))
- * ```
- *
- * You can specify custom [Char] values for the single and multi-character
- * wildcards. For example, to use `%` as the multi-character wildcard and `#`
- * as the single-character wildcard:
- * ```
- * check(WildMatchPattern.new("%cat%", '%', '#').matches("dogcatdog"))
- * ```
- */
-
-/**
- * A wildcard matcher using `*` as the multi-character wildcard and `?` as the
- * single-character wildcard.
- */
-object WildMatch {
-    /** Constructor with pattern which can be used for matching. */
-    fun new(pattern: String): WildMatchPattern =
-        WildMatchPattern.new(pattern, '*', '?')
-
-    /** Constructor with pattern which can be used for matching with case-insensitive comparison. */
-    fun newCaseInsensitive(pattern: String): WildMatchPattern =
-        WildMatchPattern.newCaseInsensitive(pattern, '*', '?')
-
-    /** Produces an empty pattern with the default `*` / `?` wildcards. */
-    fun default(): WildMatchPattern =
-        WildMatchPattern.default('*', '?')
-}
+import io.github.kotlinmania.serde.SerdeError
+import io.github.kotlinmania.serde.SerdeResult
+import io.github.kotlinmania.serdecore.de.BooleanDeserialize
+import io.github.kotlinmania.serdecore.de.CharDeserialize
+import io.github.kotlinmania.serdecore.de.Deserialize
+import io.github.kotlinmania.serdecore.de.Deserializer
+import io.github.kotlinmania.serdecore.de.IgnoredAny
+import io.github.kotlinmania.serdecore.de.MapAccess
+import io.github.kotlinmania.serdecore.de.StringDeserialize
+import io.github.kotlinmania.serdecore.de.Visitor
+import io.github.kotlinmania.serdecore.de.mutableListDeserialize
+import io.github.kotlinmania.serdecore.ser.Serialize
+import io.github.kotlinmania.serdecore.ser.Serializer
 
 /**
  * Wildcard matcher used to match strings.
@@ -65,12 +24,13 @@ object WildMatch {
  * Throws [IllegalArgumentException] at construction time if both wildcard
  * characters are identical.
  */
-class WildMatchPattern private constructor(
-    val multiWildcard: Char,
-    val singleWildcard: Char,
-    private val pattern: List<Char>,
-    private val caseInsensitive: Boolean,
-) : Comparable<WildMatchPattern> {
+class WildMatchPattern(
+    val multiWildcard: Char = '*',
+    val singleWildcard: Char = '?',
+    private val pattern: List<Char> = emptyList(),
+    private val caseInsensitive: Boolean = false,
+) : Comparable<WildMatchPattern>,
+    Serialize {
     init {
         require(multiWildcard != singleWildcard) {
             "single and multi wildcards cannot be the same"
@@ -166,6 +126,13 @@ class WildMatchPattern private constructor(
     /** Returns the pattern formatted as a string of characters. */
     override fun toString(): String = pattern.joinToString("")
 
+    override fun <Ok> serialize(serializer: Serializer<Ok>): SerdeResult<Ok> {
+        val state = serializer.serializeStruct("WildMatchPattern", 2).getOrThrow()
+        state.serializeField("pattern", PatternSerialize(pattern)).getOrThrow()
+        state.serializeField("case_insensitive", BoolSerialize(caseInsensitive)).getOrThrow()
+        return state.end()
+    }
+
     /**
      * Equality combines structural equality between [WildMatchPattern] instances
      * with pattern matching against a [String].
@@ -205,12 +172,19 @@ class WildMatchPattern private constructor(
         return caseInsensitive.compareTo(other.caseInsensitive)
     }
 
-    companion object {
+    companion object : Deserialize<WildMatchPattern> {
+        override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<WildMatchPattern> =
+            deserializer.deserializeStruct(
+                "WildMatchPattern",
+                listOf("pattern", "case_insensitive"),
+                WildMatchPatternVisitor,
+            )
+
         /** Constructor with pattern which can be used for matching. */
         fun new(
             pattern: String,
-            multiWildcard: Char,
-            singleWildcard: Char,
+            multiWildcard: Char = '*',
+            singleWildcard: Char = '?',
         ): WildMatchPattern {
             require(multiWildcard != singleWildcard) {
                 "single and multi wildcards cannot be the same"
@@ -254,8 +228,8 @@ class WildMatchPattern private constructor(
          */
         fun newCaseInsensitive(
             pattern: String,
-            multiWildcard: Char,
-            singleWildcard: Char,
+            multiWildcard: Char = '*',
+            singleWildcard: Char = '?',
         ): WildMatchPattern {
             val base = new(pattern, multiWildcard, singleWildcard)
             return WildMatchPattern(
@@ -267,7 +241,7 @@ class WildMatchPattern private constructor(
         }
 
         /** Constructs an empty [WildMatchPattern] with the supplied wildcard characters. */
-        fun default(multiWildcard: Char, singleWildcard: Char): WildMatchPattern =
+        fun default(multiWildcard: Char = '*', singleWildcard: Char = '?'): WildMatchPattern =
             WildMatchPattern(
                 multiWildcard = multiWildcard,
                 singleWildcard = singleWildcard,
@@ -291,5 +265,59 @@ class WildMatchPattern private constructor(
                 list[start + len - k + i] = head[i]
             }
         }
+    }
+}
+
+private class PatternSerialize(
+    private val pattern: List<Char>,
+) : Serialize {
+    override fun <Ok> serialize(serializer: Serializer<Ok>): SerdeResult<Ok> {
+        val seq = serializer.serializeSeq(pattern.size).getOrThrow()
+        for (c in pattern) {
+            seq.serializeElement(CharSerialize(c)).getOrThrow()
+        }
+        return seq.end()
+    }
+}
+
+private class CharSerialize(
+    private val value: Char,
+) : Serialize {
+    override fun <Ok> serialize(serializer: Serializer<Ok>): SerdeResult<Ok> =
+        serializer.serializeChar(value)
+}
+
+private class BoolSerialize(
+    private val value: Boolean,
+) : Serialize {
+    override fun <Ok> serialize(serializer: Serializer<Ok>): SerdeResult<Ok> =
+        serializer.serializeBool(value)
+}
+
+private object WildMatchPatternVisitor : Visitor<WildMatchPattern> {
+    override fun expecting(): String = "struct WildMatchPattern"
+
+    override fun <A : MapAccess> visitMap(access: A): SerdeResult<WildMatchPattern> {
+        var pattern: List<Char>? = null
+        var caseInsensitive: Boolean? = null
+        while (true) {
+            val key = access.nextKey(StringDeserialize).getOrThrow() ?: break
+            when (key) {
+                "pattern" -> pattern = access.nextValue(mutableListDeserialize(CharDeserialize)).getOrThrow()
+                "case_insensitive" -> caseInsensitive = access.nextValue(BooleanDeserialize).getOrThrow()
+                else -> access.nextValue(IgnoredAny).getOrThrow()
+            }
+        }
+        if (pattern == null || caseInsensitive == null) {
+            return SerdeResult.failure(SerdeError.custom("missing field in WildMatchPattern"))
+        }
+        return SerdeResult.success(
+            WildMatchPattern(
+                multiWildcard = '*',
+                singleWildcard = '?',
+                pattern = pattern,
+                caseInsensitive = caseInsensitive,
+            ),
+        )
     }
 }
