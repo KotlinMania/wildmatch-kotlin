@@ -1,7 +1,9 @@
-// port-lint: source lib.rs
 package io.github.kotlinmania.wildmatch
 
-import kotlin.random.Random
+import io.github.kotlinmania.rand.distr.Alphanumeric
+import io.github.kotlinmania.rand.rngs.StdRng
+import io.github.kotlinmania.serdetest.Token
+import io.github.kotlinmania.serdetest.assertTokens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,36 +14,36 @@ class WildMatchPatternTest {
     @Test
     fun isMatchRandom() {
         val patternLen = 100
-        val rng = Random(0xC0FFEE)
+        val rng = StdRng.seedFromU64(0xC0FFEEuL)
 
         repeat(1_000) {
             val patternBuilder = StringBuilder(patternLen)
             repeat(patternLen) {
-                patternBuilder.append(randomAlphanumericChar(rng))
+                patternBuilder.append(Alphanumeric.sampleChar(rng))
             }
             val pattern = StringBuilder(patternBuilder)
-            repeat(rng.nextInt(0, 15)) {
-                val idx = rng.nextInt(0, patternLen)
+            repeat(rng.randomRange(0..14)) {
+                val idx = rng.randomRange(0 until patternLen)
                 pattern[idx] = '?'
             }
-            repeat(rng.nextInt(0, 15)) {
-                val idx = rng.nextInt(0, patternLen)
+            repeat(rng.randomRange(0..14)) {
+                val idx = rng.randomRange(0 until patternLen)
                 pattern[idx] = '*'
             }
             val patternString = pattern.toString()
             val matcher = WildMatch.new(patternString)
-            repeat(rng.nextInt(0, 1_000)) { patternIdx ->
+            repeat(rng.randomRange(0..999)) { patternIdx ->
                 val input = StringBuilder(patternString)
                 for ((i, c) in patternString.reversed().withIndex()) {
                     val idx = patternString.length - i - 1
                     if (c == '?') {
-                        input[idx] = randomAlphanumericChar(rng)
+                        input[idx] = Alphanumeric.sampleChar(rng)
                     }
                     if (c == '*') {
                         val replacement =
                             buildString {
-                                repeat(rng.nextInt(0, 15)) {
-                                    append(randomAlphanumericChar(rng))
+                                repeat(rng.randomRange(0..14)) {
+                                    append(Alphanumeric.sampleChar(rng))
                                 }
                             }
                         input.deleteAt(idx)
@@ -325,13 +327,24 @@ class WildMatchPatternTest {
         val insensitive = WildMatch.newCaseInsensitive("abc")
         assertTrue(sensitive < insensitive)
     }
-}
 
-private fun randomAlphanumericChar(rng: Random): Char {
-    val idx = rng.nextInt(0, 62)
-    return when {
-        idx < 26 -> ('A' + idx)
-        idx < 52 -> ('a' + (idx - 26))
-        else -> ('0' + (idx - 52))
+    @Test
+    fun serdeRoundtrip() {
+        val pattern = WildMatch.new("c?t*")
+        val tokens =
+            listOf(
+                Token.Struct("WildMatchPattern", 2),
+                Token.Str("pattern"),
+                Token.Seq(4),
+                Token.CharValue('c'),
+                Token.CharValue('?'),
+                Token.CharValue('t'),
+                Token.CharValue('*'),
+                Token.SeqEnd,
+                Token.Str("case_insensitive"),
+                Token.Bool(false),
+                Token.StructEnd,
+            )
+        assertTokens(pattern, WildMatchPattern, tokens)
     }
 }

@@ -5,13 +5,15 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 1/1 (100.0%)
-- **Function parity:** 25/25 matched (target 57) — 100.0%
+- **Function parity:** 26/26 matched (target 57) — 100.0%
 - **Class/type parity:** 2/2 matched (target 4) — 100.0%
-- **Combined symbol parity:** 27/27 matched (target 61) — 100.0%
-- **Average inline-code cosine:** 0.70 (function body across 1 matched files)
+- **Combined symbol parity:** 28/28 matched (target 61) — 100.0%
+- **Average inline-code cosine:** 0.29 (function body across 1 matched files)
 - **Average documentation cosine:** 0.81 (doc text across 1 matched files)
 - **Cheat-zeroed Files:** 0
-- **Critical Issues:** 0 files with <0.60 function similarity
+- **Critical Issues:** 1 files with <0.60 function similarity
+- **Needs Review:** 0 files with 0.60-0.84 function similarity
+- **Excellent:** 0 files with >=0.85 function similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
 
@@ -30,14 +32,14 @@ Every matched file is listed below with function and type symbol parity.
 ### 1. lib
 
 - **Target:** `wildmatch.Lib`
-- **Similarity:** 0.70
+- **Similarity:** 0.29
 - **Dependents:** 0
-- **Priority Score:** 2703.0
-- **Functions:** 25/25 matched (target 57)
+- **Priority Score:** 2807.1
+- **Functions:** 26/26 matched (target 57)
 - **Missing functions:** _none_
 - **Types:** 2/2 matched (target 4)
 - **Missing types:** _none_
-- **Tests:** 16/16 matched
+- **Tests:** 17/17 matched
 
 ## Success Criteria
 
