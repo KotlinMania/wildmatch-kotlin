@@ -139,13 +139,20 @@ class WildMatchPattern(
      */
     override fun equals(other: Any?): Boolean =
         when (other) {
-            is WildMatchPattern ->
+            is WildMatchPattern -> {
                 multiWildcard == other.multiWildcard &&
                     singleWildcard == other.singleWildcard &&
                     caseInsensitive == other.caseInsensitive &&
                     pattern == other.pattern
-            is String -> matches(other)
-            else -> false
+            }
+
+            is String -> {
+                matches(other)
+            }
+
+            else -> {
+                false
+            }
         }
 
     override fun hashCode(): Int {
